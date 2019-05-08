@@ -31,6 +31,8 @@ context(AppInfo) ->
         {".hrl", filename:join(Dir, "include")}
     ],
 
+%%    RebarOpts = rebar_app_info:opts(AppInfo),
+    %% TODO Add load src dirs here?
     #{
         src_dirs => ["thrift"],
         include_dirs => [],
@@ -39,21 +41,25 @@ context(AppInfo) ->
     }.
 
 needed_files(_, FoundFiles, _, AppInfo) ->
-%%    RebarOpts = rebar_app_info:opts(AppInfo),
+    RebarOpts = rebar_app_info:opts(AppInfo),
 %%    Dir = rebar_app_info:dir(AppInfo),
-
+    erlang:display({?MODULE,?LINE,FoundFiles}),
     Opts = rebar_opts:get(rebar_app_info:opts(AppInfo), thrift_opts, []),
     {{[], Opts}, {FoundFiles, Opts}}.
 
 dependencies(_, _, _) ->
     [].
 
-compile(_Source, OutDirs, _, _Opts) ->
+compile(Source, OutDirs, X, Opts) ->
     {_, BinOut} = lists:keyfind(".erl", 1, OutDirs),
     {_, HrlOut} = lists:keyfind(".hrl", 1, OutDirs),
 
     ok = rebar_file_utils:ensure_dir(BinOut),
     ok = rebar_file_utils:ensure_dir(HrlOut),
+
+    erlang:display({?MODULE,?LINE,Source, OutDirs, X, Opts}),
+
+
 %%    Thrift = filename:join(BinOut, filename:basename(Source, ".thrift")),
 %%    HrlFilename = Thrift ++ ".hrl",
 
