@@ -41,29 +41,47 @@ context(AppInfo) ->
     }.
 
 needed_files(_, FoundFiles, _, AppInfo) ->
-    RebarOpts = rebar_app_info:opts(AppInfo),
+%%    RebarOpts = rebar_app_info:opts(AppInfo),
 %%    Dir = rebar_app_info:dir(AppInfo),
     erlang:display({?MODULE,?LINE,FoundFiles}),
     Opts = rebar_opts:get(rebar_app_info:opts(AppInfo), thrift_opts, []),
+    erlang:display({?MODULE,?LINE,Opts}),
     {{[], Opts}, {FoundFiles, Opts}}.
 
 dependencies(_, _, _) ->
     [].
 
-compile(Source, OutDirs, X, Opts) ->
-    {_, BinOut} = lists:keyfind(".erl", 1, OutDirs),
+compile(Source, OutDirs, _Config, Opts) ->
+    {_, ErlOut} = lists:keyfind(".erl", 1, OutDirs),
     {_, HrlOut} = lists:keyfind(".hrl", 1, OutDirs),
 
-    ok = rebar_file_utils:ensure_dir(BinOut),
+    ok = rebar_file_utils:ensure_dir(ErlOut),
     ok = rebar_file_utils:ensure_dir(HrlOut),
+    TmpDir = rebar_file_utils:system_tmpdir([rebar3_compiler_thrift_utils:get_random_filename(16)]),
+    ok = rebar_file_utils:ensure_dir(TmpDir),
 
-    erlang:display({?MODULE,?LINE,Source, OutDirs, X, Opts}),
+    erlang:display({?MODULE,?LINE,Opts}),
+    erlang:display({?MODULE,?LINE,TmpDir}),
+
+    {ok, _} = rebar_utils:sh(io_lib:format("thrift -r -gen erl -out ~s ~s", [TmpDir, Source]), []),
+    lists:foreach(
+        fun(GeneratedFile) ->
+            rebar_file_utils:mv(GeneratedFile, ErlOut)
+        end,
+        rebar_utils:find_files(TmpDir, "^.*\.erl$")),
+
+    lists:foreach(
+        fun(GeneratedFile) ->
+            rebar_file_utils:mv(GeneratedFile, HrlOut)
+        end,
+        rebar_utils:find_files(TmpDir, "^.*\.hrl$")),
 
 
 %%    Thrift = filename:join(BinOut, filename:basename(Source, ".thrift")),
 %%    HrlFilename = Thrift ++ ".hrl",
 
 %%    AllOpts = [{outdir, BinOut}, {i, [BinOut]}] ++ Opts,
+    ok = rebar_file_utils:rm_rf(TmpDir),
 
     ok. %% OR ?FAIL
 
