@@ -85,7 +85,11 @@ compile(Source, OutDirs, _Config, Opts) ->
 
     ok. %% OR ?FAIL
 
-clean(ThriftFiles, _AppInfo) ->
+clean(ThriftFiles, AppInfo) ->
+
+    Opts = rebar_opts:get(rebar_app_info:opts(AppInfo), thrift_opts, []),
+    erlang:display({?MODULE,?LINE,Opts}),
+
     rebar_file_utils:delete_each(
         [rebar_utils:to_list(re:replace(F, "\\.thrift$", "_thrift.erl", [unicode]))
             || F <- ThriftFiles]).
